@@ -51,7 +51,7 @@ def bef_req():
             if auth.authorization_header(request) is None and cookie is None:
                 abort(401, description="Unauthorized")
             if auth.current_user(request) is None:
-                abort(403, description="Forbidden"
+                abort(403, description="Forbidden")
 
 
 @app.errorhandler(404)
@@ -63,14 +63,14 @@ def not_found(error) -> str:
 
 @app.errorhandler(401)
 def unauthorized(error) -> str:
-    """ Unauthorized handler
+    """ Request unauthorized handler
     """
     return jsonify({"error": "Unauthorized"}), 401
 
 
 @app.errorhandler(403)
 def forbidden(error) -> str:
-    """ Forbidden handler
+    """ Request unauthorized handler
     """
     return jsonify({"error": "Forbidden"}), 403
 
