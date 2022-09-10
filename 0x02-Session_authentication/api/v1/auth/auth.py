@@ -43,7 +43,6 @@ class Auth():
         ''' current_user func '''
         return None
 
-
     def session_cookie(self, request=None):
         '''self descriptive'''
         if not request:
