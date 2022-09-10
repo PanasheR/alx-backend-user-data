@@ -5,13 +5,11 @@ from models.base import Base
 
 
 class UserSession(Base):
-    """
-    UserSession Class
+    """ UserSession class
     """
 
     def __init__(self, *args: list, **kwargs: dict):
-        """
-        Initializing a UserSession instance
+        """ Initialize a UserSession instance
         """
         super().__init__(*args, **kwargs)
         self.user_id = kwargs.get('user_id')
