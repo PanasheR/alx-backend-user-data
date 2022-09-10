@@ -11,18 +11,23 @@ class Auth():
     managing the API authentification
     '''
     def require_auth(self, path: str, excluded_paths: List[str]) -> bool:
-        ''' require_auth func '''
-        if path is None:
+        '''self descriptive'''
+        if not path or not excluded_paths:
             return True
-        if excluded_paths is None:
-            return True
-        if len(excluded_paths) == 0:
-            return True
-        if path is None or excluded_paths is None:
-            return True
-        path = path + '/' if path[-1] != '/' else path
-        if path in excluded_paths:
-            return False
+
+        path += '/' if path[-1] != '/' else ''
+        wildcard = any(rex.endswith("*") for rex in excluded_paths)
+
+        if not wildcard:
+            if path in excluded_paths:
+                return False
+
+        for rex in excluded_paths:
+            if rex[-1] == '*':
+                if path.startswith(rex[:-1]):
+                    return False
+            if rex == path:
+                return False
         return True
 
     def authorization_header(self, request=None) -> str:
