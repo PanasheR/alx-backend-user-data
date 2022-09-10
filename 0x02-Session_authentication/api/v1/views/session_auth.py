@@ -1,48 +1,71 @@
 #!/usr/bin/env python3
-""" sesion auth
 """
-from api.v1.views import app_views
-from flask import abort, jsonify, request
+Definition of class SessionAuth
+"""
+import base64
+from typing import TypeVar
+from uuid import uuid4
+
+from .auth import Auth
 from models.user import User
-import os
 
 
-@app_views.route('/auth_session/login', methods=['POST'], strict_slashes=False)
-def login():
-    """ GET/api/v1/users
-    Return:
-      - list of User objects
+class SessionAuth(Auth):
+    """ ImplementSessionAuthorizationprotocolmethods
     """
-    email = request.form.get("email")
-    password = request.form.get("password")
-    if not email:
-        return jsonify({"error": "email missing"}), 400
-    if not password:
-        return jsonify({"error": "password missing"}), 400
-    users = User.search({"email": email})
+    user_id_by_session_id = {}
 
-    if not users:
-        return jsonify(error="no user found for this email"), 404
+    def create_session(self, user_id: str = None) -> str:
+        """
+        Creates a Session ID for a user with id user_id
+        Args:
+            user_id (str): user's user id
+        Return:
+            None is user_id is None or not a string
+            Session ID in string format
+        """
+        if user_id is None or not isinstance(user_id, str):
+            return None
+        id = uuid4()
+        self.user_id_by_session_id[str(id)] = user_id
+        return str(id)
 
-    for user in users:
-        if not user.is_valid_password(password):
-            return jsonify({"error": "wrong password"}), 401
-        else:
-            from api.v1.app import auth
-            sesion_id = auth.create_session(user.id)
-            sesion_name = os.getenv("SESSION_NAME")
-            user_dict = jsonify(user.to_json())
-            user_dict.set_cookie(sesion_name, sesion_id)
-            return user_dict
+    def user_id_for_session_id(self, session_id: str = None) -> str:
+        """
+        Returns a user ID based on a session ID
+        Args:
+            session_id (str): session ID
+        Return:
+            user id or None if session_id is None or not a string
+        """
+        if session_id is None or not isinstance(session_id, str):
+            return None
+        return self.user_id_by_session_id.get(session_id)
 
+    def current_user(self, request=None):
+        """
+        Return a user instance based on a cookie value
+        Args:
+            request : request object containing cookie
+        Return:
+            User instance
+        """
+        session_cookie = self.session_cookie(request)
+        user_id = self.user_id_for_session_id(session_cookie)
+        user = User.get(user_id)
+        return user
 
-@app_views.route('/auth_session/logout',
-                 methods=['DELETE'],
-                 strict_slashes=False)
-def logout():
-    '''self descriptive'''
-    destroy_session = auth.destroy_session(request)
-
-    if destroy_session:
-        return jsonify({}), 200
-    abort(404)
+    def destroy_session(self, request=None):
+        """
+        Deletes a user session
+        """
+        if request is None:
+            return False
+        session_cookie = self.session_cookie(request)
+        if session_cookie is None:
+            return False
+        user_id = self.user_id_for_session_id(session_cookie)
+        if user_id is None:
+            return False
+        del self.user_id_by_session_id[session_cookie]
+        return True
